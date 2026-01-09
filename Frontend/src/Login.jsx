@@ -25,16 +25,48 @@ const Login = ({ onLogin }) => { // Accept onLogin prop
     }, 600);
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    // Simulate auth check here
-    if (onLogin) {
-      // Hardcoded Admin Check
-      if (userId === 'admin' && password === 'admin123') {
-        onLogin('admin'); // Log in as admin
+    if (!onLogin) return;
+
+    try {
+      // Use relative path '/api' which is proxied to localhost:8080 by Vite
+      const loginRes = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: userId, password }),
+      });
+
+      if (loginRes.ok) {
+        const user = await loginRes.json();
+        onLogin(user);
+      } else if (loginRes.status === 401) {
+        const errorData = await loginRes.json();
+        if (errorData.error === "Invalid name") {
+          // Attempt to signup
+          const role = userId === 'admin' ? 'admin' : 'user';
+          const signupRes = await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: userId, password, role }),
+          });
+
+          if (signupRes.ok) {
+            const newUser = await signupRes.json();
+            onLogin(newUser);
+          } else {
+            console.error("Signup failed");
+            alert("Signup failed. Please try again.");
+          }
+        } else {
+          alert("Login failed: " + errorData.error);
+        }
       } else {
-        onLogin(userId || 'user'); // Log in as regular user
+        alert("Login failed.");
       }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to backend");
     }
   };
 

@@ -16,12 +16,27 @@ function ChatPage({ currentUser }) {
   // File upload state
   const [selectedFiles, setSelectedFiles] = useState([]);
 
+  // Track last uploaded file for follow-up queries, persisting in session
+  const [lastUploadedFilename, setLastUploadedFilename] = useState(() => {
+    return sessionStorage.getItem("rag_last_filename") || null;
+  });
+
+  // Helper to update filename state and session storage
+  const updateLastUploadedFilename = (filename) => {
+    setLastUploadedFilename(filename);
+    if (filename) {
+      sessionStorage.setItem("rag_last_filename", filename);
+    } else {
+      sessionStorage.removeItem("rag_last_filename");
+    }
+  };
+
   // Refs
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   // --- Sidebar Logic ---
-  const isAdmin = currentUser === 'admin';
+  const isAdmin = (currentUser && currentUser.role === 'admin') || currentUser === 'admin';
 
   const startNewChat = () => {
     setPrevChats([]);
@@ -31,9 +46,19 @@ function ChatPage({ currentUser }) {
     setSelectedFiles([]);
   };
 
-  const loadThread = (threadId) => {
+  const loadThread = async (threadId) => {
     setCurrThreadId(threadId);
     setNewChat(false);
+    if (!currentUser || !currentUser._id) return;
+    try {
+      const res = await fetch(`/api/thread/${threadId}?userId=${currentUser._id}`);
+      if (res.ok) {
+        const msgs = await res.json();
+        setPrevChats(msgs);
+      }
+    } catch (error) {
+      console.error("Failed to load thread", error);
+    }
   };
 
   // --- Chat Logic ---
@@ -41,13 +66,27 @@ function ChatPage({ currentUser }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [prevChats, loading]);
 
+  // Fetch threads on mount/user change
+  useEffect(() => {
+    if (currentUser && currentUser._id) {
+      fetch(`/api/user/${currentUser._id}/init`)
+    }
+  }, [currentUser]);
+
   // --- Input Logic ---
-  const handlePlusClick = () => fileInputRef.current?.click();
+  const handlePlusClick = () => {
+    // Force clear the input value before clicking to ensure onChange always fires
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files)]);
     }
+    // We clear it in handlePlusClick now, but keeping it here doesn't hurt
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -55,14 +94,125 @@ function ChatPage({ currentUser }) {
     setSelectedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  const uploadFileToPython = (file, query) => {
+    return new Promise((resolve, reject) => {
+      // NOTE: Using the IP provided in the user snippet. 
+      const ws = new WebSocket("ws://192.168.10.1:8000");
+
+      // Set a timeout to reject the promise if things hang
+      const timeoutId = setTimeout(() => {
+        if (ws.readyState !== WebSocket.CLOSED) {
+          console.error("Python server timeout");
+          ws.close();
+          reject(new Error("Timeout waiting for Python server"));
+        }
+      }, 60000); // 60 seconds
+
+      ws.onopen = async () => {
+        console.log("Connected to Python WS server");
+        const meta = {
+          type: "file_meta",
+          filename: file.name,
+          size: file.size,
+          query: query // Send the query/prompt
+        };
+        ws.send(JSON.stringify(meta));
+
+        // Convert File to ArrayBuffer to ensure binary transmission
+        const arrayBuffer = await file.arrayBuffer();
+        ws.send(arrayBuffer);
+
+        console.log("📤 PDF sent to Python:", file.name);
+      };
+
+      ws.onmessage = (event) => {
+        console.log("Python server says:", event.data);
+        clearTimeout(timeoutId); // Clear timeout on response
+
+        try {
+          const response = JSON.parse(event.data);
+          if (response.status === "success") {
+            ws.close();
+            resolve(response.rag_response);
+          } else {
+            // Handle explicit failures from server if any
+            console.warn("Python server returned status:", response.status);
+            ws.close();
+            resolve("File uploaded, but RAG processing returned status: " + response.status);
+          }
+        } catch (e) {
+          // Fallback for legacy plain text 
+          if (event.data === "File received successfully") {
+            ws.close();
+            resolve("File received (no RAG output)");
+          } else {
+            // Unknown text response, close and resolve to avoid hanging
+            ws.close();
+            resolve("Server response: " + event.data);
+          }
+        }
+      };
+
+      ws.onerror = (error) => {
+        clearTimeout(timeoutId);
+        console.error("WebSocket error:", error);
+        // Do not reject immediately if it's just a closure error, but usually onerror is fatal
+        reject(error);
+      };
+    });
+  };
+
+  const queryPython = (filename, query) => {
+    return new Promise((resolve) => {
+      const ws = new WebSocket("ws://192.168.10.1:8000");
+      const timeoutId = setTimeout(() => {
+        if (ws.readyState !== WebSocket.CLOSED) ws.close();
+        resolve("Timeout waiting for Python RAG response");
+      }, 30000);
+
+      ws.onopen = () => {
+        // Send format: { type: "query", quetion: "...", role: "...", filename: "..." }
+        // User explicitly asked for "quetion" in the JSON format.
+        const payload = {
+          type: "query",
+          question: query,
+          role: currentUser?.role || "user",
+          filename: filename
+        };
+        ws.send(JSON.stringify(payload));
+      };
+
+      ws.onmessage = (event) => {
+        clearTimeout(timeoutId);
+        try {
+          const response = JSON.parse(event.data);
+          ws.close();
+          resolve(response.rag_response || "No response content");
+        } catch (e) {
+          ws.close();
+          resolve("Error parsing Python response");
+        }
+      };
+
+      ws.onerror = () => {
+        clearTimeout(timeoutId);
+        resolve("Error connecting to Python server");
+      };
+    });
+  };
+
   const getReply = async () => {
+    // REMOVED: if (loading) return; to allow sending multiple queries/files without waiting
     if (!prompt.trim() && selectedFiles.length === 0) return;
+
+    const currentPrompt = prompt;
+    const currentFiles = selectedFiles;
 
     if (newChat) {
       setAllThreads((prev) => [
         {
           threadId: currThreadId,
-          title: prompt || "New Chat",
+          title: currentPrompt || "New Chat",
         },
         ...prev,
       ]);
@@ -72,37 +222,109 @@ function ChatPage({ currentUser }) {
     // Structured message object
     const newMessage = {
       role: "user",
-      content: prompt,
-      attachments: selectedFiles.map(f => ({ name: f.name }))
+      content: currentPrompt,
+      attachments: currentFiles.map(f => ({ name: f.name }))
     };
 
     setPrevChats((prev) => [...prev, newMessage]);
 
     // Prepare content for calculation/simulation
-    const attachmentsText = selectedFiles.map(f => `[File: ${f.name}]`).join(" ");
-    const fullContentString = selectedFiles.length > 0
-      ? `${attachmentsText} \n ${prompt}`
-      : prompt;
+    const attachmentsText = currentFiles.map(f => `[File sent to Python: ${f.name}]`).join(" ");
+    const fullContentString = currentFiles.length > 0
+      ? `${attachmentsText} \n ${currentPrompt}`
+      : currentPrompt;
 
     setPrompt("");
     setSelectedFiles([]);
     setLoading(true);
 
     try {
-      // Simulation
-      setTimeout(() => {
-        setPrevChats((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "This is a simulated response based on your input: " + fullContentString
-          }
-        ]);
-        setLoading(false);
-      }, 1000);
+      // 1. Send files to Python Server via WebSocket AND collect RAG responses
+      let ragOutput = "";
+      if (currentFiles.length > 0) {
+        console.log("Uploading files to Python server...");
+        // Upload sequentially to avoid connection issues or use Promise.all for parallel
+        for (const file of currentFiles) {
+          const result = await uploadFileToPython(file, currentPrompt);
+          ragOutput += `\n\n[RAG Response for ${file.name}]: ${result}`;
+          updateLastUploadedFilename(file.name);
+        }
+      } else if (lastUploadedFilename && currentPrompt) {
+        // No new files, but we have text and a previous file context
+        console.log(`Querying Python for stored file: ${lastUploadedFilename}`);
+
+        // Notify user in UI that we are using context (optional, or rely on response)
+        // ragOutput += `\n[Querying context: ${lastUploadedFilename}]...`; 
+
+        const result = await queryPython(lastUploadedFilename, currentPrompt);
+        ragOutput += `\n\n[RAG Response for ${lastUploadedFilename}]: ${result}`;
+      }
+
+      // 2. Send text message to Express Backend (without files)
+      const formData = new FormData();
+      formData.append("threadId", currThreadId);
+
+      if (!fullContentString || fullContentString.trim().length === 0) {
+        console.warn("Attempted to send empty message to backend");
+        // Fallback to avoid 400 error if query was only for Python but we want to save it
+        formData.append("message", "Processing file...");
+      } else {
+        formData.append("message", fullContentString);
+      }
+
+      console.log("Sending to Backend:", {
+        threadId: currThreadId,
+        message: fullContentString,
+        userId: currentUser?._id,
+        role: currentUser?.role
+      });
+
+      if (currentUser && currentUser._id) {
+        formData.append("userId", currentUser._id);
+      } else {
+        console.error("User ID missing in currentUser object!", currentUser);
+      }
+
+      if (currentUser && currentUser.role) {
+        formData.append("role", currentUser.role);
+      } else {
+        formData.append("role", "user");
+      }
+
+      // Intentionally NOT appending 'files' here so they don't go to Express
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed response from backend");
+      }
+
+      const data = await res.json();
+
+      // Combine Express reply + RAG reply
+      const finalReply = (data.reply || "") + (ragOutput ? `\n---${ragOutput}` : "");
+
+      setPrevChats((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: finalReply
+        }
+      ]);
+      setLoading(false);
 
     } catch (err) {
       console.error(err);
+      setPrevChats((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Error: Failed to process request (Check Python Server connection?)"
+        }
+      ]);
       setLoading(false);
     }
   };
@@ -165,7 +387,7 @@ function ChatPage({ currentUser }) {
             <div className="empty-state">
               <div className="greeting-container">
                 <img src="lemon.png" className="greeting-lemon" alt="Logo" />
-                <h1 className="greeting-text">Hello, {currentUser || 'Guest'}</h1>
+                <h1 className="greeting-text">Hello, {currentUser?.name || (typeof currentUser === 'string' ? currentUser : 'Guest')}</h1>
                 <h2 className="greeting-sub">What shall we do?</h2>
               </div>
             </div>
@@ -257,7 +479,7 @@ function ChatPage({ currentUser }) {
 
             <input
               className="text-input"
-              placeholder={selectedFiles.length > 0 ? "" : "What shall we do?"}
+              placeholder={selectedFiles.length > 0 ? "Ask about this file..." : (lastUploadedFilename ? `Ask about ${lastUploadedFilename}...` : "What shall we do?")}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" ? getReply() : null}

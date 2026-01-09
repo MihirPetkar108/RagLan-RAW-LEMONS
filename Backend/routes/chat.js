@@ -1,10 +1,25 @@
 import express from "express";
 import mongoose from "mongoose";
+import multer from "multer"; // Import multer
 import Thread from "../models/Thread.js";
 import User from "../models/User.js";
-import getOpenAIAPIResponse from "../utils/openai.js";
+// import getOpenAIAPIResponse from "../utils/openai.js"; // Comment out OpenAI import
 
 const router = express.Router();
+
+// Configure Multer for Disk Storage
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/') // Make sure this folder exists
+    },
+    filename: function (req, file, cb) {
+        // Save with timestamp to avoid name collisions
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+        cb(null, uniqueSuffix + '-' + file.originalname)
+    }
+})
+
+const upload = multer({ storage: storage });
 
 // Get all threads
 router.get("/thread", async (req, res) => {
@@ -140,10 +155,20 @@ router.delete("/thread/:threadId", async (req, res) => {
 });
 
 // New Chat / Update Chat
-router.post("/chat", async (req, res) => {
-    const { threadId, message, name, role, password, userId } = req.body;
+router.post("/chat", upload.array('files'), async (req, res) => {
+    const { threadId, message, name, role, userId } = req.body;
+
+    // Log received files to the terminal
+    if (req.files && req.files.length > 0) {
+        console.log("--- Received Files ---");
+        req.files.forEach(file => {
+            console.log(`File: ${file.originalname} | Size: ${file.size} bytes | Type: ${file.mimetype}`);
+        });
+        console.log("----------------------");
+    }
 
     if (!threadId || !message) {
+        console.error("400 Error: Missing threadId or message", { threadId, message });
         return res.status(400).json({
             error: "Missing required fields! (threadId, message)",
         });
@@ -152,6 +177,7 @@ router.post("/chat", async (req, res) => {
     // Require authenticated userId for chat operations to avoid creating users
     // implicitly by name. Clients should supply the logged-in user's _id.
     if (!userId) {
+        console.error("400 Error: Missing userId");
         return res.status(400).json({
             error: "Missing userId: please login and include userId in request body",
         });
@@ -169,33 +195,22 @@ router.post("/chat", async (req, res) => {
         let user = null;
         if (userId) {
             if (!mongoose.Types.ObjectId.isValid(userId)) {
+                console.error("400 Error: Invalid userId format", userId);
                 return res.status(400).json({ error: "Invalid userId" });
             }
             user = await User.findById(userId);
             if (!user) {
+                console.error("400 Error: User not found", userId);
                 return res
                     .status(400)
                     .json({ error: "User not found for userId" });
             }
             // if role provided, ensure it matches
             if (role && user.role !== role) {
+                console.error("400 Error: Role mismatch", { sentRole: role, dbRole: user.role });
                 return res
                     .status(400)
                     .json({ error: "Role mismatch for userId" });
-            }
-        } else {
-            // If we reach here when userId is absent, we've already returned above.
-            // Keep this branch for completeness but it should not run.
-            user = await User.findOne({ name });
-            if (!user) {
-                user = new User({ name, role });
-                await user.save();
-            } else {
-                if (user.role !== role) {
-                    return res.status(400).json({
-                        error: `User '${name}' already exists with a different role`,
-                    });
-                }
             }
         }
 
@@ -220,7 +235,11 @@ router.post("/chat", async (req, res) => {
             thread.messages.push(msg);
         }
 
-        const assistantReply = await getOpenAIAPIResponse(message);
+        // HARDCODED RESPONSE instead of OpenAI for now
+        // const assistantReply = await getOpenAIAPIResponse(message);
+        const fileCount = req.files ? req.files.length : 0;
+        const assistantReply = `This is a hardcoded response from the server. I received your message: "${message}" and ${fileCount} file(s).`;
+
         thread.messages.push({
             role: "assistant",
             content: assistantReply,

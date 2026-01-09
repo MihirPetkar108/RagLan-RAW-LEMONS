@@ -53,7 +53,7 @@ router.post("/login", async (req, res) => {
 
         // success — do not return password
         const returned = { _id: user._id, name: user.name, role: user.role };
-        res.json({ success: true, user: returned });
+        res.json(returned);
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: "Login failed" });
