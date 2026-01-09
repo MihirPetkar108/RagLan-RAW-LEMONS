@@ -1,0 +1,225 @@
+/* Global Reset & Font */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    /* Prevent scrolling during transition */
+}
+
+/* Main Container Layout */
+.app-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: #ffffff;
+}
+
+/* --- Brand Section (Left/Background) --- */
+.brand-section {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Using a lemon-themed placeholder image from Unsplash */
+    background-image: url('https://images.unsplash.com/photo-1519096956627-2b53589b3353?q=80&w=2670&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+    overflow: hidden;
+}
+
+/* Yellow tint overlay for "light tone" */
+.brand-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 204, 0.3);
+    /* Light lemon tint */
+    z-index: 1;
+}
+
+.brand-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    transition: transform 0.8s ease;
+}
+
+.brand-title {
+    font-size: 6rem;
+    margin: 0;
+    color: #fff;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    font-family: serif;
+    /* Classy look */
+}
+
+.cta-btn {
+    margin-top: 2rem;
+    padding: 15px 60px;
+    font-size: 1.5rem;
+    border-radius: 50px;
+    border: none;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.cta-btn:hover {
+    transform: scale(1.05);
+    background-color: #fefefe;
+}
+
+/* --- States --- */
+
+/* Initial State: Full Width Brand */
+.app-container.full-view .brand-section {
+    width: 100%;
+}
+
+.app-container.full-view .login-section {
+    width: 0;
+    opacity: 0;
+}
+
+/* Split State: Sidebar Brand + Form */
+.app-container.split-view .brand-section {
+    width: 45%;
+}
+
+.app-container.split-view .brand-content {
+    transform: scale(0.8);
+    /* Slightly shrink title when in sidebar mode */
+}
+
+/* --- Login Section (Right) --- */
+.login-section {
+    width: 55%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.5s ease 0.3s;
+    opacity: 1;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    /* Fade in animation for content */
+    animation: slideFadeIn 1s forwards;
+    opacity: 0;
+    /* Only show content when prompted (handled by JS state mainly, but css helps transition) */
+}
+
+/* Delay the content appearance slightly so the panel opens first */
+.app-container.split-view .login-container {
+    animation-delay: 0.4s;
+}
+
+@keyframes slideFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-header {
+    font-family: serif;
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    color: #111;
+}
+
+.login-sub {
+    color: #666;
+    margin-bottom: 3rem;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+}
+
+.input-group input:focus {
+    border-color: #ccc;
+    background-color: #fff;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #000;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: opacity 0.2s;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+}
+
+.back-link {
+    margin-top: 20px;
+    text-align: center;
+    color: #888;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+    color: #000;
+}
+
+/* --- Main Interface Layout (Post-Login) --- */
+.main-interface {
+    color: white;
+    height: 100vh;
+    background-color: #121212;
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    overflow: hidden;
+}
+
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}

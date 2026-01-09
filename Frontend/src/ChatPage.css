@@ -1,0 +1,410 @@
+/* --- Layout Container --- */
+.chat-page-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-color: #121212;
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  width: 260px;
+  height: 100%;
+  background-color: #171717;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  border-right: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.sidebar-header h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  padding-left: 10px;
+}
+
+.new-chat-btn {
+  border: 1px solid #444;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #eee;
+}
+
+.new-chat-btn:hover {
+  background-color: #2a2a2a;
+}
+
+.threads-title {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 10px;
+  padding-left: 5px;
+}
+
+.threads-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.thread-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.thread-item:hover,
+.thread-item.active {
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
+.sidebar-footer {
+  border-top: 1px solid #333;
+  padding-top: 10px;
+}
+
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.footer-item:hover {
+  background-color: #2a2a2a;
+}
+
+/* --- Main Chat Area --- */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+}
+
+.navbar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  /* Very subtle separator */
+}
+
+.userIcon {
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.userIcon:hover {
+  opacity: 1;
+}
+
+.chat-messages-area {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Empty State / Greeting */
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  /* Ensures centering vertically */
+}
+
+.greeting-container {
+  text-align: center;
+  opacity: 0.9;
+  margin-bottom: 50px;
+  /* Slight offset upwards */
+}
+
+.greeting-lemon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1.5rem;
+  object-fit: contain;
+}
+
+.greeting-text {
+  font-size: 2.5rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.greeting-sub {
+  font-size: 2rem;
+  font-weight: 300;
+  color: #888;
+  margin: 0;
+}
+
+/* Messages List */
+.messages-list {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-div {
+  display: flex;
+  justify-content: flex-end;
+  margin: 1.5rem 0;
+}
+
+.user-text-bubble {
+  background-color: #2f2f2f;
+  padding: 12px 18px;
+  border-radius: 20px;
+  border-bottom-right-radius: 4px;
+  /* Distinctive shape */
+  max-width: 80%;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  /* Enable layout for attachments + text */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.msg-file-card {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.file-icon-wrapper {
+  background-color: #fff;
+  color: #2f2f2f;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.msg-file-name {
+  font-size: 0.9rem;
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.msg-text {
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Loader */
+.loader-wrapper {
+  padding-left: 0;
+}
+
+.lemon-loader {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  animation: lemonSpin 2s linear infinite;
+}
+
+@keyframes lemonSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Input Area */
+.chat-input-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 2rem 2rem 2rem;
+  background-color: #121212;
+}
+
+.input-box {
+  width: 100%;
+  max-width: 750px;
+  background-color: #2F2F2F;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* Allow horizontal scrolling for many files */
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Hide scrollbar Firefox */
+  gap: 8px;
+}
+
+.input-box::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar Chrome/Safari */
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ccc;
+  border-radius: 50%;
+  transition: all 0.2s;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* NEW STYLE FOR IMAGE ICONS */
+.action-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  /* Invert colors to make black icons white, and maximize brightness */
+  filter: invert(1) brightness(100);
+}
+
+.text-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px;
+  font-size: 1rem;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  min-width: 150px;
+  /* Ensure space to type */
+  white-space: nowrap;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  background-color: #424242;
+  /* Slightly lighter than input bg */
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #fff;
+  flex-shrink: 0;
+  /* Keep chips from squishing */
+  gap: 8px;
+  border: 1px solid #555;
+  animation: fadeIn 0.2s ease;
+}
+
+.file-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file {
+  cursor: pointer;
+  color: #bbb;
+  display: flex;
+  /* Fix alignment for SVG */
+  align-items: center;
+}
+
+.remove-file:hover {
+  color: #ff6666;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Markdown Specifics */
+.gpt-text-content pre {
+  background-color: #1e1e1e;
+  padding: 1rem;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.gpt-text-content code {
+  font-family: 'Consolas', 'Monaco', monospace;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.gpt-text-content pre code {
+  background-color: transparent;
+  padding: 0;
+}

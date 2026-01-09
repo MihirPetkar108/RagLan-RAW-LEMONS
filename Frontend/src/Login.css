@@ -1,0 +1,318 @@
+/* Main Container */
+.login-page-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  /* CHANGE THIS VALUE for the main page background */
+  background-color: #121212;
+  overflow: hidden;
+  /* Updated to use Poppins as the primary font */
+  font-family: 'Poppins', sans-serif;
+}
+
+/* --- Brand Panel (Left/Background) --- */
+.brand-panel {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* CHANGE THIS VALUE to match the one above */
+  background-color: #100e0e;
+  background-image: none;
+  transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Remove the old overlay */
+.brand-overlay {
+  display: none;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  transition: transform 0.8s ease;
+  /* Changed text color to white for visibility on dark bg */
+  color: #ffffff;
+  text-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* New CSS for the transparent lemon behind text */
+.lemon-bg {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: auto;
+  opacity: 1;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+/* Scoped selector to override App.css global styles */
+.login-page-container .brand-title {
+  /* implementing Poppins ExtraLight 200 */
+  font-family: 'Poppins', sans-serif;
+  font-size: 10rem;
+  margin: 0;
+  /* Added margin-top to move it downward */
+  margin-top: 100px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  /* Changed to White for Dark Theme */
+  color: #ffffff !important;
+  text-shadow: none !important;
+  /* Checkmate to the old white shadow */
+  line-height: 1;
+}
+
+/* New class for the big letters */
+.login-page-container .brand-title .big-letter {
+  font-family: 'Poppins', sans-serif;
+  font-size: 13rem;
+  font-weight: 300;
+  /* Using baseline ensures all letters sit on the same horizontal line */
+  vertical-align: baseline;
+}
+
+.trigger-btn {
+  margin-top: 3rem;
+  padding: 18px 70px;
+  font-size: 1rem;
+  border-radius: 8px;
+  /* Less rounded, more modern like reference */
+  border: none;
+  /* Inverted colors for the button on dark theme: White button, Black text */
+  background-color: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  /* White glow shadow */
+  transition: all 0.3s ease;
+  text-transform: capitalize;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+
+.trigger-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+  background-color: #f0f0f0;
+}
+
+.initial-login-trigger {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  height: auto;
+}
+
+.initial-login-trigger.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- Form Panel (Right) --- */
+.form-panel {
+  /* KEPT WHITE as requested ("keep the colours of the login form dont change them") */
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+  position: relative;
+  /* Smoother, larger curve */
+  border-top-left-radius: 60px;
+  border-bottom-left-radius: 60px;
+  /* Ensure background color doesn't bleed */
+  z-index: 5;
+  /* Stronger shadow for depth perception against dark bg */
+  box-shadow: -15px 0 40px rgba(0, 0, 0, 0.5);
+  /* Removed the stark black border line */
+  border-left: none;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 550px;
+  /* Increased from 500px */
+  /* Slightly wider */
+  padding: 5rem;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- States --- */
+/* Full View (Initial) */
+.login-page-container.full-view .brand-panel {
+  width: 100%;
+}
+
+.login-page-container.full-view .form-panel {
+  width: 0;
+}
+
+/* Split View (Login Active) */
+.login-page-container.split-view .brand-panel {
+  width: 55%;
+  /* Increased from 40% */
+}
+
+.login-page-container.split-view .form-panel {
+  width: 50%;
+  /* Decreased from 60% */
+}
+
+.login-page-container.split-view .brand-content {
+  transform: scale(0.65);
+  /* Shrink logo slightly */
+}
+
+
+/* This was missing! It makes the form appear when the "Login" button is clicked */
+.login-page-container.split-view .form-container {
+  opacity: 1 !important;
+  transform: translateX(0);
+  transition-delay: 0.4s;
+  pointer-events: auto;
+}
+
+/* --- Form Elements --- */
+.form-header {
+  /* Using Poppins for the header instead of Times New Roman */
+  font-family: 'Poppins', sans-serif;
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  color: #000;
+  font-weight: 600;
+  /* Slightly bolder for Poppins */
+  text-align: left;
+  /* Aligned left usually looks cleaner with this style, or center */
+  text-align: center;
+}
+
+.form-sub {
+  color: #666;
+  margin-bottom: 3rem;
+  font-size: 18px;
+  text-align: center;
+  /* Ensure subheader uses Poppins too */
+  font-family: 'Poppins', sans-serif;
+  font-weight: 300;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.8rem;
+  /* Increased spacing */
+  color: #333;
+  font-size: 1.1rem;
+  /* Increased font size */
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 20px 24px;
+  /* Ensure font inherits */
+  font-family: 'Poppins', sans-serif;
+  /* Light gray background, no border style matching reference */
+  border: none;
+  background-color: #f3f5f7;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  /* Increased text size inside input */
+  color: #333;
+  transition: box-shadow 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #e0e0e0;
+  background-color: #fff;
+}
+
+/* Placeholder color styling */
+.input-group input::placeholder {
+  color: #9ca3af;
+}
+
+.login-submit-btn {
+  width: 100%;
+  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+  /* Bigger button */
+  /* Pure black button */
+  background-color: #000000;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  /* Larger text */
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 1.5rem;
+}
+
+.login-submit-btn:hover {
+  background-color: #000;
+  opacity: 0.8;
+}
+
+.go-back {
+  margin-top: 2rem;
+  text-align: center;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.go-back:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+/* --- Click Ripple Effect (from example) --- */
+.splash-effect {
+  position: fixed;
+  /* Using fixed to align perfectly with clientX/Y */
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  /* Centers the circle on the cursor */
+  pointer-events: none;
+  /* Allows clicks to pass through the element */
+  animation: ripple 0.6s linear forwards;
+  z-index: 9999;
+}
+
+@keyframes ripple {
+  from {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+
+  to {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
