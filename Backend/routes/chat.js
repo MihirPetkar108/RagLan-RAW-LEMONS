@@ -156,7 +156,10 @@ router.delete("/thread/:threadId", async (req, res) => {
 
 // New Chat / Update Chat
 router.post("/chat", upload.array('files'), async (req, res) => {
-    const { threadId, message, name, role, userId } = req.body;
+    const { threadId, message, name, role, userId, ragResponse } = req.body;
+
+    console.log("📥 Received ragResponse from frontend:", ragResponse ? `(${ragResponse.length} chars)` : "EMPTY OR UNDEFINED");
+    console.log("📝 ragResponse content:", ragResponse);
 
     // Log received files to the terminal
     if (req.files && req.files.length > 0) {
@@ -235,10 +238,10 @@ router.post("/chat", upload.array('files'), async (req, res) => {
             thread.messages.push(msg);
         }
 
-        // HARDCODED RESPONSE instead of OpenAI for now
-        // const assistantReply = await getOpenAIAPIResponse(message);
-        const fileCount = req.files ? req.files.length : 0;
-        const assistantReply = `This is a hardcoded response from the server. I received your message: "${message}" and ${fileCount} file(s).`;
+        // Use the RAG response from frontend if provided, otherwise use a default message
+        const assistantReply = (ragResponse && ragResponse.trim()) || "Processing your request...";
+
+        console.log("💾 Storing assistant reply in DB:", assistantReply.substring(0, 100) + "...");
 
         thread.messages.push({
             role: "assistant",

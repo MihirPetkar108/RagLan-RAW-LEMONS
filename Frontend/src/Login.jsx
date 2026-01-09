@@ -8,6 +8,8 @@ const Login = ({ onLogin }) => { // Accept onLogin prop
   // State for form inputs
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSplash = (e) => {
     // Create a new splash object with unique ID and coordinates
@@ -29,6 +31,12 @@ const Login = ({ onLogin }) => { // Accept onLogin prop
     e.preventDefault();
     if (!onLogin) return;
 
+    // Clear any previous error message
+    setErrorMessage('');
+
+    // Start submitting state for animation
+    setIsSubmitting(true);
+
     try {
       // Use relative path '/api' which is proxied to localhost:8080 by Vite
       const loginRes = await fetch("/api/login", {
@@ -40,33 +48,17 @@ const Login = ({ onLogin }) => { // Accept onLogin prop
       if (loginRes.ok) {
         const user = await loginRes.json();
         onLogin(user);
-      } else if (loginRes.status === 401) {
-        const errorData = await loginRes.json();
-        if (errorData.error === "Invalid name") {
-          // Attempt to signup
-          const role = userId === 'admin' ? 'admin' : 'user';
-          const signupRes = await fetch("/api/users", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: userId, password, role }),
-          });
-
-          if (signupRes.ok) {
-            const newUser = await signupRes.json();
-            onLogin(newUser);
-          } else {
-            console.error("Signup failed");
-            alert("Signup failed. Please try again.");
-          }
-        } else {
-          alert("Login failed: " + errorData.error);
-        }
       } else {
-        alert("Login failed.");
+        const errorData = await loginRes.json().catch(() => null);
+        // Show backend error message inline below password field
+        setErrorMessage(errorData?.error || "Login failed. Please check your credentials.");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to connect to backend");
+      setErrorMessage("Failed to connect to backend");
+    } finally {
+      // Stop submitting state once request finishes (success or error)
+      setIsSubmitting(false);
     }
   };
 
@@ -143,16 +135,23 @@ const Login = ({ onLogin }) => { // Accept onLogin prop
               />
             </div>
 
-            {/* Optional styling row for visual match */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', fontSize: '1rem', color: '#666' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" style={{ width: 'auto', transform: 'scale(1.3)' }} /> Remember me
-              </label>
-              <span style={{ cursor: 'pointer' }}>Forgot Password</span>
-            </div>
+            {errorMessage && (
+              <div className="login-error-message">{errorMessage}</div>
+            )}
 
-            <button type="submit" className="login-submit-btn">
-              Sign In
+            <button
+              type="submit"
+              className={`login-submit-btn ${isSubmitting ? 'login-submit-btn-loading' : ''}`}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="login-spinner" />
+                  <span className="login-submit-text">Signing in...</span>
+                </>
+              ) : (
+                <span className="login-submit-text">Sign In</span>
+              )}
             </button>
           </form>
         </div>

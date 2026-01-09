@@ -252,6 +252,14 @@
   color: #9ca3af;
 }
 
+.login-error-message {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #dc2626;
+  /* red-600 */
+  font-size: 0.95rem;
+}
+
 .login-submit-btn {
   width: 100%;
   padding: 20px;
@@ -266,13 +274,39 @@
   /* Larger text */
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.15s ease;
   margin-top: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .login-submit-btn:hover {
   background-color: #000;
   opacity: 0.8;
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.login-submit-btn-loading {
+  transform: translateY(1px);
+}
+
+.login-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: login-spin 0.6s linear infinite;
+}
+
+.login-submit-text {
+  display: inline-block;
 }
 
 .go-back {
@@ -314,5 +348,15 @@
     width: 100px;
     height: 100px;
     opacity: 0;
+  }
+}
+
+@keyframes login-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
