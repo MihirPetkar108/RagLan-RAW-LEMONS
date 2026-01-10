@@ -26,3 +26,5 @@ Body:
 
 Fetch that user's thread
 GET http://localhost:8080/api/thread/t5?userId=64a1f2...yourUserIdHere
+
+Admin, Engineer, HR, Research

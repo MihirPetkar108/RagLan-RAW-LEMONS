@@ -16,6 +16,10 @@ function ChatPage({ currentUser }) {
     // File upload state
     const [selectedFiles, setSelectedFiles] = useState([]);
 
+    // Role selector state
+    const [showRoleSelector, setShowRoleSelector] = useState(false);
+    const [selectedRole, setSelectedRole] = useState(null);
+
     // Track last uploaded file for follow-up queries, persisting in session
     const [lastUploadedFilename, setLastUploadedFilename] = useState(() => {
         return sessionStorage.getItem("rag_last_filename") || null;
@@ -34,6 +38,9 @@ function ChatPage({ currentUser }) {
     // Refs
     const fileInputRef = useRef(null);
     const messagesEndRef = useRef(null);
+
+    // Available roles
+    const roles = ["Admin", "Engineer", "HR", "Research"];
 
     // Normalize messages coming from backend so any
     // "[File sent to Python: filename]" markers in content
@@ -74,6 +81,8 @@ function ChatPage({ currentUser }) {
         setCurrThreadId(Date.now().toString());
         setPrompt("");
         setSelectedFiles([]);
+        setShowRoleSelector(false);
+        setSelectedRole(null);
         setLoading(false);
     };
 
@@ -163,18 +172,31 @@ function ChatPage({ currentUser }) {
                 console.log("Updated selectedFiles:", updated);
                 return updated;
             });
+            // Show role selector when files are added
+            setShowRoleSelector(true);
         }
         // We clear it in handlePlusClick now, but keeping it here doesn't hurt
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const removeFile = (indexToRemove) => {
-        setSelectedFiles((prev) =>
-            prev.filter((_, index) => index !== indexToRemove)
-        );
+        setSelectedFiles((prev) => {
+            const updated = prev.filter((_, index) => index !== indexToRemove);
+            // Hide role selector if no files remain
+            if (updated.length === 0) {
+                setShowRoleSelector(false);
+                setSelectedRole(null);
+            }
+            return updated;
+        });
     };
 
-    const uploadFileToPython = (file, query) => {
+    const handleRoleSelect = (role) => {
+        setSelectedRole(role);
+        setShowRoleSelector(false);
+    };
+
+    const uploadFileToPython = (file, query, role) => {
         return new Promise((resolve, reject) => {
             // NOTE: Using the IP provided in the user snippet.
             const ws = new WebSocket("ws://192.168.10.1:8000");
@@ -195,6 +217,7 @@ function ChatPage({ currentUser }) {
                     filename: file.name,
                     size: file.size,
                     query: query, // Send the query/prompt
+                    role: role, // Send the selected role
                 };
                 ws.send(JSON.stringify(meta));
 
@@ -202,7 +225,12 @@ function ChatPage({ currentUser }) {
                 const arrayBuffer = await file.arrayBuffer();
                 ws.send(arrayBuffer);
 
-                console.log("📤 PDF sent to Python:", file.name);
+                console.log(
+                    "📤 PDF sent to Python:",
+                    file.name,
+                    "with role:",
+                    role
+                );
             };
 
             ws.onmessage = (event) => {
@@ -244,7 +272,7 @@ function ChatPage({ currentUser }) {
         });
     };
 
-    const queryPython = (filename, query) => {
+    const queryPython = (filename, query, role) => {
         return new Promise((resolve) => {
             const ws = new WebSocket("ws://192.168.10.1:8000");
             const timeoutId = setTimeout(() => {
@@ -253,12 +281,11 @@ function ChatPage({ currentUser }) {
             }, 180000); // 3 minutes - RAG model needs time to process
 
             ws.onopen = () => {
-                // Send format: { type: "query", quetion: "...", role: "...", filename: "..." }
-                // User explicitly asked for "quetion" in the JSON format.
+                // Send format: { type: "query", question: "...", role: "...", filename: "..." }
                 const payload = {
                     type: "query",
                     question: query,
-                    role: currentUser?.role || "user",
+                    role: role || currentUser?.role || "user",
                     filename: filename,
                 };
                 ws.send(JSON.stringify(payload));
@@ -301,8 +328,15 @@ function ChatPage({ currentUser }) {
     const getReply = async () => {
         if (!prompt.trim() && selectedFiles.length === 0) return;
 
+        // If files are selected but no role is chosen, don't proceed
+        if (selectedFiles.length > 0 && !selectedRole) {
+            alert("Please select a role before sending the file.");
+            return;
+        }
+
         const currentPrompt = prompt;
         const currentFiles = [...selectedFiles];
+        const currentRole = selectedRole;
 
         if (newChat) {
             setAllThreads((prev) => [
@@ -327,31 +361,37 @@ function ChatPage({ currentUser }) {
         setLoading(true);
 
         try {
-            // 2️⃣ Upload files to Python server
+            // 2️⃣ Upload files to Python server with role
             let ragOutput = "";
             if (currentFiles.length > 0) {
-                console.log("Uploading files to Python server...");
+                console.log(
+                    "Uploading files to Python server with role:",
+                    currentRole
+                );
                 for (const file of currentFiles) {
                     const result = await uploadFileToPython(
                         file,
-                        currentPrompt
+                        currentPrompt,
+                        currentRole
                     );
                     ragOutput += result; // Store clean response without prefix
                     updateLastUploadedFilename(file.name);
                 }
             } else if (lastUploadedFilename && currentPrompt) {
-                // Query existing file context
+                // Query existing file context with current role or user's role
                 console.log(
                     `Querying Python for stored file: ${lastUploadedFilename}`
                 );
                 const result = await queryPython(
                     lastUploadedFilename,
-                    currentPrompt
+                    currentPrompt,
+                    currentRole || currentUser?.role
                 );
                 ragOutput = result; // Store clean response
             }
 
             setSelectedFiles([]); // Clear after upload
+            setSelectedRole(null); // Reset role after sending
 
             // 3️⃣ Send to Express Backend for persistence
             const attachmentsText = currentFiles
@@ -377,7 +417,10 @@ function ChatPage({ currentUser }) {
             if (currentUser && currentUser._id) {
                 formData.append("userId", currentUser._id);
             }
-            if (currentUser && currentUser.role) {
+            // Send the selected role or user's default role
+            if (currentRole) {
+                formData.append("role", currentRole);
+            } else if (currentUser && currentUser.role) {
                 formData.append("role", currentUser.role);
             } else {
                 formData.append("role", "user");
@@ -643,6 +686,30 @@ function ChatPage({ currentUser }) {
                     {console.log(
                         "Rendering with selectedFiles:",
                         selectedFiles
+                    )}
+
+                    {/* Role Selector - Shows when files are uploaded */}
+                    {showRoleSelector && (
+                        <div className="role-selector-container">
+                            <p className="role-selector-title">
+                                Select a role for this query:
+                            </p>
+                            <div className="role-buttons">
+                                {roles.map((role) => (
+                                    <button
+                                        key={role}
+                                        className={`role-button ${
+                                            selectedRole === role
+                                                ? "selected"
+                                                : ""
+                                        }`}
+                                        onClick={() => handleRoleSelect(role)}
+                                    >
+                                        {role}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     {/* File Cards Container - Shows above input */}
