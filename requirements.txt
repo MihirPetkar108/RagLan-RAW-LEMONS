@@ -1,0 +1,50 @@
+﻿# Core RAG dependencies
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-core>=0.3.0
+langchain-ollama>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# Vector database
+faiss-cpu
+
+# Hybrid Search (BM25 + Re-ranking)
+rank-bm25
+sentence-transformers
+
+# PyTorch (required by sentence-transformers)
+# For CPU-only: pip install torch --index-url https://download.pytorch.org/whl/cpu
+# For CUDA: pip install torch --index-url https://download.pytorch.org/whl/cu121
+torch
+
+# Document processing
+pypdf
+python-docx
+docx2txt
+
+# Data processing
+pandas
+numpy
+
+# Environment variables
+python-dotenv
+
+# UI (optional - comment out if not using streamlit)
+streamlit
+
+# Tokenizer for truncation
+tiktoken
+
+# For loading environment variables
+python-dotenv
+
+# For PDF and DOCX loading (LangChain loaders)
+langchain-community
+langchain-core
+langchain-ollama
+langchain-text-splitters
+
+
+fastapi
+uvicorn
+python-multipart
